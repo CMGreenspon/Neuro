@@ -1,4 +1,10 @@
-@recipe function f(e::RasterPlot;  group = nothing, groupby = nothing, groupcolor = nothing, y_offset = 0)
+@userplot RasterPlot
+"""
+Testing
+"""
+rasterplot
+
+@recipe function f(e::RasterPlot;  groupidx = nothing,  groupcolor = nothing, y_offset = 0, tick_height = .475)
     # Ensure that only one argument is given
     spike_times = e.args[1]
     num_trials = size(spike_times,1)
@@ -10,30 +16,28 @@
         error("Spike times must be a Vector{Float} or Vector{Vector{Float}}.")
     end
 
-    # If group !== nothing then make sure it has the same #trials as spike_times
-    if group !== nothing && length(group) != length(spike_times)
-        error("length(spike_times) != length(group).")
-    elseif group !== nothing && typeof(group) <: Integer # Also check it's an int
-        error("The group variable must be an integer.")
+    # If groupidx !== nothing then make sure it has the same #trials as spike_times
+    if groupidx == nothing
+        num_groups = 1
+    elseif groupidx !== nothing && length(groupidx) != length(spike_times)
+        error("length(spike_times) != length(groupidx).")
+    elseif groupidx !== nothing && typeof(groupidx) <: Integer # Also check it's an int
+        error("The groupidx variable must be an integer.")
+    elseif groupidx !== nothing
+        num_groups = length(unique(groupidx))
     end
 
     # Check groupcolor format
-    if groupcolor === nothing
-        groupcolor = repeat([:gray20], num_trials)
+    if groupcolor === nothing && groupidx === nothing
+        groupcolor = repeat([:gray40], num_trials)
     elseif isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
         groupcolor = repeat([groupcolor], num_trials)
     elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
-        if group === nothing && length(groupcolor) != num_trials
-            error("Number of trials != number of colors, consider defining groups")
-        elseif group !== nothing length(unique(group)) != length(groupcolor)
-            error("Number of groups != number of group colors")
+        if groupidx === nothing && length(groupcolor) != num_trials
+            error("Number of trials != number of colors, consider defining groupidx")
+        elseif groupidx !== nothing && length(unique(groupidx)) != length(groupcolor)
+            error("Number of groupidx != number of group colors")
         end
-    end
-
-    if groupcolor !== nothing
-        groupcolor = repeat(groupcolor, size(y,3)) # Use the same color for all groups
-    elseif (groupcolor !== nothing && ndims(y) > 2) && length(groupcolor) < size(y,3)
-        error("$(length(groupcolor)) colors given for a matrix with $(size(y,3)) groups")
     end
 
     # Determine if a color palette is being used so it can be passed to secondary lines
@@ -44,25 +48,40 @@
     end
 
     # Begin the plot
-    seriestype := :line
-    for t = 1:num_trials
-        # Background paths
-        @series begin
-            num_trial_spikes = length(spike_times[t])
-            x := vec(transpose(cat(spike_times[t],
-                                   spike_times[t],
-                                   fill(NaN, num_trial_spikes), dims = 2)))
-            y := vec(transpose(cat(fill(t-tick_height+y_offset, num_trial_spikes),
-                                   fill(t+tick_height+y_offset, num_trial_spikes),
-                                   fill(NaN, num_trial_spikes), dims = 2)))
-            # line
-            if groupcolor === nothing
-                linecolor := palette(color_palette)[plotattributes[:plot_object][1][end][:series_index]+1]
-            elseif groupcolor !== nothing
-                linecolor := groupcolor[g]
+    seriestype := :path
+    legend --> false
+    ti = 1
+    for g = 1:num_groups
+        if num_groups == 1
+            num_group_trials = num_trials 
+            group_trial_idx = collect(1:num_group_trials)
+        else
+            group_trial_idx = findall(groupidx .== g)
+            num_group_trials = length(group_trial_idx)
+        end
+        for t = 1:num_group_trials
+            # Background paths
+            @series begin
+                num_trial_spikes = length(spike_times[group_trial_idx[t]])
+                x := vec(transpose(cat(spike_times[group_trial_idx[t]],
+                                       spike_times[group_trial_idx[t]],
+                                       fill(NaN, num_trial_spikes), dims = 2)))
+                y := vec(transpose(cat(fill(ti-tick_height+y_offset, num_trial_spikes),
+                                       fill(ti+tick_height+y_offset, num_trial_spikes),
+                                       fill(NaN, num_trial_spikes), dims = 2)))
+                # line
+                if groupcolor === nothing
+                    linecolor := palette(color_palette)[g]
+                elseif groupcolor !== nothing
+                    if length(groupcolor) == num_groups
+                        linecolor := groupcolor[g]
+                    else
+                        linecolor := groupcolor[t]
+                    end
+                end
+                () # Supress implicit return
             end
-            () # Supress implicit return
+            ti += 1
         end
     end
-
 end
