@@ -17,7 +17,7 @@ rasterplot
     end
 
     # If groupidx !== nothing then make sure it has the same #trials as spike_times
-    if groupidx == nothing
+    if groupidx === nothing
         num_groups = 1
     elseif groupidx !== nothing && length(groupidx) != length(spike_times)
         error("length(spike_times) != length(groupidx).")
@@ -35,12 +35,12 @@ rasterplot
     elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
         if groupidx === nothing && length(groupcolor) != num_trials
             error("Number of trials != number of colors, consider defining groupidx")
-        elseif groupidx !== nothing && length(unique(groupidx)) != length(groupcolor)
+        elseif groupidx !== nothing && num_groups != length(groupcolor)
             error("Number of groupidx != number of group colors")
         end
     end
 
-    # Determine if a color palette is being used so it can be passed to secondary lines
+    # Determine if a color palette is being used
     if :color_palette ∉ keys(plotattributes)
         color_palette = :default
     else
@@ -52,6 +52,7 @@ rasterplot
     legend --> false
     ti = 1
     for g = 1:num_groups
+        # Work out wich spike times belong to which group
         if num_groups == 1
             num_group_trials = num_trials 
             group_trial_idx = collect(1:num_group_trials)
@@ -59,9 +60,10 @@ rasterplot
             group_trial_idx = findall(groupidx .== g)
             num_group_trials = length(group_trial_idx)
         end
+        # Plot each trial of the group
         for t = 1:num_group_trials
-            # Background paths
             @series begin
+                # Make ticks
                 num_trial_spikes = length(spike_times[group_trial_idx[t]])
                 x := vec(transpose(cat(spike_times[group_trial_idx[t]],
                                        spike_times[group_trial_idx[t]],
@@ -69,7 +71,7 @@ rasterplot
                 y := vec(transpose(cat(fill(ti-tick_height+y_offset, num_trial_spikes),
                                        fill(ti+tick_height+y_offset, num_trial_spikes),
                                        fill(NaN, num_trial_spikes), dims = 2)))
-                # line
+                # Set color
                 if groupcolor === nothing
                     linecolor := palette(color_palette)[g]
                 elseif groupcolor !== nothing

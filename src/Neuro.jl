@@ -3,6 +3,8 @@ module Neuro
     using StatsPlots
     import RecipesBase: recipetype
     using RecipesPipeline
+
     include("raster.jl")
+    include("psth.jl")
 
 end # module Neuro
