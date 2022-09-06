@@ -10,9 +10,9 @@ rasterplot
     num_trials = size(spike_times,1)
 
     # Determine if a single trial or multiple trials are given
-    if isa(spike_times, Union{Vector{Float32}, Vector{Float64}})
+    if isa(spike_times, Vector{AbstractFloat})
         spike_times = [spike_times] # Assert Vector{Vector}
-    elseif !isa(spike_times,Union{Vector{Vector{Float64}}, Vector{Vector{Float32}}})
+    elseif !(spike_times isa Vector{Vector{T}} where T<:AbstractFloat)
         error("Spike times must be a Vector{Float} or Vector{Vector{Float}}.")
     end
 
@@ -74,7 +74,7 @@ rasterplot
                 # Set color
                 if groupcolor === nothing
                     linecolor := palette(color_palette)[g]
-                elseif groupcolor !== nothing
+                else
                     if length(groupcolor) == num_groups
                         linecolor := groupcolor[g]
                     else

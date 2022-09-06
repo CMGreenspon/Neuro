@@ -4,8 +4,9 @@ Testing
 """
 psth
 
-@recipe function f(p::PSTH; binresolution = .05, windowedges = nothing,groupidx = nothing,  groupcolor = nothing,
-     subsamplemethod = nothing, numfolds = 5, numbootstraps = 100)
+@recipe function f(p::PSTH; binresolution = .05, windowedges = nothing, groupidx = nothing,  groupcolor = nothing,
+     subsamplemethod = nothing, numfolds = 5, numbootstraps = 100, bootstrapprop = 0.1, errormode=:STD,
+     smoothingmethod = nothing, smoothingbins = nothing)
     # Ensure that only one argument is given
     spike_times = p.args[1]
     num_trials = size(spike_times,1)
@@ -16,7 +17,7 @@ psth
         max_time = round(maximum(maximum.(spike_times))/binresolution) * binresolution
         histedges = min_time:binresolution:max_time
     else
-        if isa(windowedges, Union{Vector{Float32}, Vector{Float64}, Vector{Int}}) && length(windowedges) == 2
+        if windowedges isa Vector{T} where T<:Number && length(windowedges) == 2
             histedges = windowedges[1]:binresolution:windowedges[2]
         else
             error("Window edges must be a 2-element vector with ints or floats")
@@ -26,9 +27,9 @@ psth
     histcenters = histedges[1:end-1] .+ (binresolution/2)
     
     # Determine if a single trial or multiple trials are given
-    if isa(spike_times, Union{Vector{Float32}, Vector{Float64}})
+    if spike_times isa Vector{AbstractFloat}
         spike_times = [spike_times] # Assert Vector{Vector}
-    elseif !isa(spike_times,Union{Vector{Vector{Float64}}, Vector{Vector{Float32}}})
+    elseif !(spike_times isa Vector{Vector{T}} where T<:AbstractFloat)
         error("Spike times must be a Vector{Float} or Vector{Vector{Float}}.")
     end
 
@@ -85,6 +86,10 @@ psth
         error("Invalid subsamplemethod. Must be nothing, :Bootstrap, or :NFold")
     end
 
+    # Check if smoothing is enabled
+    if smoothingmethod !== nothing && smoothingbins === nothing
+        error("If smoothingmethod is defined you must also define smoothingbins.")
+    end
 
     # Begin the plot
     seriestype := :path
@@ -104,24 +109,134 @@ psth
             group_hist = fit(Histogram, group_spike_times, histedges)
             @series begin
                 x := histcenters
-                y := group_hist.weights
+                if smoothingmethod === nothing
+                    y := group_hist.weights
+                else
+                    y := smoothhist(group_hist.weights, method = smoothingmethod, windowsize = smoothingbins)
+                end
                 # line
                 if groupcolor === nothing
                     linecolor := palette(color_palette)[g]
-                elseif groupcolor !== nothing
+                else
                     linecolor := groupcolor[g]
                 end
                 () # Supress implicit return
             end
-        elseif subsamplemethod == :Bootstrap
-            for f = 1:numbootstraps
-                temp = 0;
+        elseif subsamplemethod == :Bootstrap || subsamplemethod == :NFold
+            # Sample with appropriate method
+            if subsamplemethod == :Bootstrap
+                trials_per_strap = Int(floor(bootstrapprop * length(group_trial_idx)))
+                group_hist = fill(0,numbootstraps, length(histcenters))
+                for f = 1:numbootstraps
+                    boot_idx = sample(group_trial_idx, trials_per_strap, replace=false)
+                    strap_spike_times = collect(Iterators.flatten(spike_times[boot_idx]))
+                    strap_hist = fit(Histogram, strap_spike_times, histedges)
+                    group_hist[f,:] = strap_hist.weights
+                end
+
+            elseif subsamplemethod == :NFold
+                group_hist = fill(0,numfolds, length(histcenters))
+                tperfold = Int(floor(length(group_trial_idx) / numfolds))
+                group_fold_idx = reshape(sample(group_trial_idx, tperfold*numfolds, replace=false), tperfold, numfolds)
+                for f = 1:numfolds
+                    fold_spike_times = collect(Iterators.flatten(spike_times[group_fold_idx[:,f]]))
+                    fold_hist = fit(Histogram, fold_spike_times, histedges)
+                    group_hist[f,:] = fold_hist.weights
+                end
             end
 
-        elseif subsamplemethod == :NFold
-            for f = 1:numfolds
-                temp = 0;
+            # Compute center and bounds for ribbon plot
+            if errormode == :SEM || errormode == :STD
+                y_center = vec(mean(group_hist, dims=1))
+                y_error = vec(std(group_hist, dims=1))
+                if errormode == :SEM
+                    y_error = y_error ./ numfolds
+                end
+            elseif errormode == :IQR
+                y_center = vec(median(group_hist, dims=1))
+                y_lower = vec(mapslices(Y -> percentile(Y, 25), group_hist, dims=1))
+                y_upper = vec(mapslices(Y -> percentile(Y, 75), group_hist, dims=1))
+                y_error = (y_center .- y_lower, y_upper .- y_center) # Difference from center value
+            end
+
+            # Make ribbon plot 
+            @series begin
+                x := histcenters
+                if smoothingmethod === nothing
+                    y := y_center
+                    ribbon := y_error
+                else
+                    y := smoothhist(y_center, method = smoothingmethod, windowsize = smoothingbins)
+                    ribbon := smoothhist(y_error, method = smoothingmethod, windowsize = smoothingbins)
+                end
+                fillalpha --> .1
+                if groupcolor === nothing
+                    linecolor := palette(color_palette)[g]
+                    fillcolor := palette(color_palette)[g]
+                else groupcolor !== nothing
+                    linecolor := groupcolor[g]
+                    fillcolor := groupcolor[g]
+                end
+                () # Supress implicit return
             end
         end
     end
+end
+
+
+function smoothhist(spike_hist::Vector{<:Number}; method = :mean, windowsize=5)
+    # Initalize output to be the same size as the input
+    smoothed_hist = zeros(length(spike_hist))
+
+    # Ensure window_size is odd-valued
+    if !iseven(windowsize)
+        windowsize = windowsize + 1
+    end
+    half_win_idx = Int(floor(round(windowsize/2)))
+
+    # Use desired smoothing method
+    # Though it's cleaner to allocate indices and then apply it is 30% slower
+    if method == :mean
+        for i = 1:length(spike_hist)
+            if i <= half_win_idx
+                smoothed_hist[i] = mean(spike_hist[1:i+half_win_idx])
+            elseif i >= length(spike_hist) - half_win_idx
+                smoothed_hist[i] = mean(spike_hist[i-half_win_idx:end])
+            else
+                smoothed_hist[i] = mean(spike_hist[i-half_win_idx:i+half_win_idx])
+            end
+        end
+
+    elseif method == :median
+        for i = 1:length(spike_hist)
+            if i <= half_win_idx
+                smoothed_hist[i] = median(spike_hist[1:i+half_win_idx])
+            elseif i >= length(spike_hist) - half_win_idx
+                smoothed_hist[i] = median(spike_hist[i-half_win_idx:end])
+            else
+                smoothed_hist[i] = median(spike_hist[i-half_win_idx:i+half_win_idx])
+            end
+        end
+
+    elseif method == :gaussian
+        # Create the smoothing kernel
+        hw_x = LinRange(-3,3,(half_win_idx*2)+1)
+        gauss_kernel = Normal(0,1)
+        gauss_pdf = pdf.(gauss_kernel, hw_x)
+        gauss_mult = gauss_pdf ./ sum(gauss_pdf)
+        # Convolve
+        for i = 1:length(spike_hist)
+            if i <= half_win_idx
+                smoothed_hist[i] = sum(spike_hist[1:i+half_win_idx] .* gauss_mult[end-(half_win_idx+i-1):end])
+            elseif i >= length(spike_hist) - half_win_idx
+                smoothed_hist[i] = sum(spike_hist[i-half_win_idx:end] .* gauss_mult[1:length(i-half_win_idx:length(spike_hist))])
+            else
+                smoothed_hist[i] = sum(spike_hist[i-half_win_idx:i+half_win_idx] .* gauss_mult)
+            end
+        end
+    else
+        error("Invalid method: must be :mean, :median, :gaussian")
+    end
+
+    return smoothed_hist
 end
