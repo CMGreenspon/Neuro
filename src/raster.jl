@@ -1,10 +1,10 @@
-@userplot RasterPlot
+@userplot raster
 """
 Testing
 """
-rasterplot
+raster
 
-@recipe function f(e::RasterPlot;  groupidx = nothing,  groupcolor = nothing, y_offset = 0, tick_height = .475)
+@recipe function f(e::Raster;  groupidx = nothing,  groupcolor = nothing, y_offset = 0, tick_height = .475)
     # Ensure that only one argument is given
     spike_times = e.args[1]
     num_trials = size(spike_times,1)
@@ -27,9 +27,16 @@ rasterplot
         num_groups = length(unique(groupidx))
     end
 
+    # Determine if a color palette is being used
+    if :color_palette ∉ keys(plotattributes)
+        color_palette = :default
+    else
+        color_palette = plotattributes[:color_palette]
+    end
+
     # Check groupcolor format
     if groupcolor === nothing && groupidx === nothing
-        groupcolor = repeat([:gray40], num_trials)
+        groupcolor = palette(color_palette)[1:num_groups]
     elseif isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
         groupcolor = repeat([groupcolor], num_trials)
     elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
@@ -38,13 +45,6 @@ rasterplot
         elseif groupidx !== nothing && num_groups != length(groupcolor)
             error("Number of groupidx != number of group colors")
         end
-    end
-
-    # Determine if a color palette is being used
-    if :color_palette ∉ keys(plotattributes)
-        color_palette = :default
-    else
-        color_palette = plotattributes[:color_palette]
     end
 
     # Begin the plot

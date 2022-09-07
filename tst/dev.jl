@@ -1,10 +1,10 @@
 using Neuro, StatsBase, StatsPlots, BenchmarkTools, Distributions
 ## RasterPlot
-    # max_spikes = 100
-    # num_trials = 100
-    # groups = [rand(1:2)  for i in 1:num_trials]
-    # spike_times = [rand(rand(1:max_spikes)) for i in 1:num_trials]
-    # rasterplot(spike_times, groupidx = groups)
+    max_spikes = 100
+    num_trials = 100
+    groups = [rand(1:2)  for i in 1:num_trials]
+    spike_times = [rand(rand(1:max_spikes)) for i in 1:num_trials]
+    rasterplot(spike_times, groupidx = groups)
 
 
 # ## PSTH
@@ -12,7 +12,7 @@ using Neuro, StatsBase, StatsPlots, BenchmarkTools, Distributions
     num_trials = 1000
     groups = [rand(1:4)  for i in 1:num_trials]
     spike_times = [randn(rand(1:max_spikes)) .+ groups[i] for i in 1:num_trials]
-    @btime psth(spike_times, groupidx = groups, subsamplemethod=:Bootstrap, numbootstraps = 100, errormode=:SEM,
+    psth(spike_times, groupidx = groups, subsamplemethod=:Bootstrap, numbootstraps = 100, errormode=:STD,
      smoothingmethod=:gaussian, smoothingbins=5)
 
 
