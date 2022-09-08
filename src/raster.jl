@@ -1,12 +1,12 @@
-@userplot raster
+@userplot Raster
 """
 Testing
 """
 raster
 
-@recipe function f(e::Raster;  groupidx = nothing,  groupcolor = nothing, y_offset = 0, tick_height = .475)
+@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, y_offset = 0, tick_height = .475)
     # Ensure that only one argument is given
-    spike_times = e.args[1]
+    spike_times = r.args[1]
     num_trials = size(spike_times,1)
 
     # Determine if a single trial or multiple trials are given
@@ -61,29 +61,35 @@ raster
             num_group_trials = length(group_trial_idx)
         end
         # Plot each trial of the group
+        group_x = Vector{Vector{Float64}}(undef,num_group_trials)
+        group_y = Vector{Vector{Float64}}(undef,num_group_trials)
         for t = 1:num_group_trials
-            @series begin
-                # Make ticks
-                num_trial_spikes = length(spike_times[group_trial_idx[t]])
-                x := vec(transpose(cat(spike_times[group_trial_idx[t]],
-                                       spike_times[group_trial_idx[t]],
-                                       fill(NaN, num_trial_spikes), dims = 2)))
-                y := vec(transpose(cat(fill(ti-tick_height+y_offset, num_trial_spikes),
-                                       fill(ti+tick_height+y_offset, num_trial_spikes),
-                                       fill(NaN, num_trial_spikes), dims = 2)))
-                # Set color
-                if groupcolor === nothing
-                    linecolor := palette(color_palette)[g]
-                else
-                    if length(groupcolor) == num_groups
-                        linecolor := groupcolor[g]
-                    else
-                        linecolor := groupcolor[t]
-                    end
-                end
-                () # Supress implicit return
-            end
+            num_trial_spikes = length(spike_times[group_trial_idx[t]])
+            group_x[t] = vec(transpose(cat(spike_times[group_trial_idx[t]],
+                                           spike_times[group_trial_idx[t]],
+                                           fill(NaN, num_trial_spikes), dims = 2)))
+            group_y[t] = vec(transpose(cat(fill(ti-tick_height+y_offset, num_trial_spikes),
+                                           fill(ti+tick_height+y_offset, num_trial_spikes),
+                                           fill(NaN, num_trial_spikes), dims = 2)))
             ti += 1
+        end
+
+        @series begin
+            # Make ticks
+            x := collect(Iterators.flatten(group_x))
+            y := collect(Iterators.flatten(group_y))
+            # Set color
+            if groupcolor === nothing
+                linecolor := palette(color_palette)[g]
+            else
+                if length(groupcolor) == num_groups
+                    linecolor := groupcolor[g]
+                else
+                    linecolor := groupcolor[t]
+                end
+            end
+            linewidth --> .5
+            () # Supress implicit return
         end
     end
 end
