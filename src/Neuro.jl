@@ -7,7 +7,7 @@ module Neuro
     using Distributions
 
     # Neuro.jl
-    include("raster.jl")
     include("psth.jl")
+    include("raster.jl")
 
 end # module Neuro

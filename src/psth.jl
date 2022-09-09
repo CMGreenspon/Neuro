@@ -44,6 +44,13 @@ psth
         num_groups = length(unique(groupidx))
     end
 
+    # Determine if a color palette is being used
+    if :color_palette ∉ keys(plotattributes)
+        color_palette = :default
+    else
+        color_palette = plotattributes[:color_palette]
+    end
+
     # Check groupcolor format
     if groupidx === nothing
         if isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
@@ -55,11 +62,15 @@ psth
         error("Number of groupidx ≠ number of group colors")
     end
 
-    # Determine if a color palette is being used
-    if :color_palette ∉ keys(plotattributes)
-        color_palette = :default
-    else
-        color_palette = plotattributes[:color_palette]
+    # Check groupcolor format
+    if groupcolor === nothing
+            groupcolor = palette(color_palette)[repeat(collect(1:16),Int(ceil(num_groups/length(palette(color_palette)))))]
+    elseif isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
+        groupcolor = repeat([groupcolor], num_trials)
+    elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
+        if groupidx !== nothing && num_groups != length(groupcolor)
+            error("Number of groupidx != number of group colors")
+        end
     end
 
     # Set subsampling defaults if in use
@@ -115,11 +126,7 @@ psth
                     y := smoothhist(group_hist.weights, method = smoothingmethod, windowsize = smoothingbins)
                 end
                 # line
-                if groupcolor === nothing
-                    linecolor := palette(color_palette)[g]
-                else
-                    linecolor := groupcolor[g]
-                end
+                linecolor := groupcolor[g]
                 () # Supress implicit return
             end
         elseif subsamplemethod == :Bootstrap || subsamplemethod == :NFold
@@ -170,13 +177,8 @@ psth
                     ribbon := smoothhist(y_error, method = smoothingmethod, windowsize = smoothingbins)
                 end
                 fillalpha --> .1
-                if groupcolor === nothing
-                    linecolor := palette(color_palette)[g]
-                    fillcolor := palette(color_palette)[g]
-                else groupcolor !== nothing
-                    linecolor := groupcolor[g]
-                    fillcolor := groupcolor[g]
-                end
+                linecolor := groupcolor[g]
+                fillcolor := groupcolor[g]
                 () # Supress implicit return
             end
         end

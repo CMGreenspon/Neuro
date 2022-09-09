@@ -35,8 +35,12 @@ raster
     end
 
     # Check groupcolor format
-    if groupcolor === nothing && groupidx === nothing
-        groupcolor = palette(color_palette)[1:num_groups]
+    if groupcolor === nothing
+        if groupidx !== nothing
+            groupcolor = palette(color_palette)[repeat(collect(1:16),Int(ceil(num_groups/length(palette(color_palette)))))]
+        else groupidx === nothing
+            groupcolor = palette(color_palette)[repeat(collect(1:16),Int(ceil(num_trials/length(palette(color_palette)))))]
+        end
     elseif isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
         groupcolor = repeat([groupcolor], num_trials)
     elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
