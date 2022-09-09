@@ -13,8 +13,8 @@ psth
 
     # Get range of spike times
     if windowedges === nothing
-        min_time = round(minimum(minimum.(spike_times))/binresolution) * binresolution
-        max_time = round(maximum(maximum.(spike_times))/binresolution) * binresolution
+        min_time = round(minimum(minimum.(spike_times; init=0))/binresolution) * binresolution
+        max_time = round(maximum(maximum.(spike_times; init=0))/binresolution) * binresolution
         histedges = min_time:binresolution:max_time
     else
         if windowedges isa Vector{T} where T<:Number && length(windowedges) == 2
