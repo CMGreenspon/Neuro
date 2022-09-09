@@ -38,6 +38,7 @@ raster
     if groupcolor === nothing
         if groupidx !== nothing
             groupcolor = palette(color_palette)[repeat(collect(1:16),Int(ceil(num_groups/length(palette(color_palette)))))]
+            groupcolor = groupcolor[1:num_groups]
         else groupidx === nothing
             groupcolor = palette(color_palette)[repeat(collect(1:16),Int(ceil(num_trials/length(palette(color_palette)))))]
         end
