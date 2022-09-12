@@ -9,5 +9,6 @@ module Neuro
     # Neuro.jl
     include("psth.jl")
     include("raster.jl")
+    include("spikerates.jl")
 
 end # module Neuro

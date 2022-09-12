@@ -1,4 +1,5 @@
 using Neuro, StatsBase, StatsPlots, BenchmarkTools, Distributions
+include(raw"..\src\spikerates.jl")
 ## RasterPlot
     max_spikes = 1000
     num_trials = 100
@@ -15,10 +16,9 @@ using Neuro, StatsBase, StatsPlots, BenchmarkTools, Distributions
     @time psth(spike_times, groupidx = groups, subsamplemethod=:Bootstrap, numbootstraps = 100, errormode=:STD,
      smoothingmethod=:gaussian, smoothingbins=5)
 
-## Empty spikes
-    max_spikes = 100
+## Spike Rates
+    max_spikes = 1000
     num_trials = 100
     spike_times = [randn(rand(1:max_spikes)) for i in 1:num_trials]
-    spike_times[2] = []
-    psth(spike_times, subsamplemethod=:Bootstrap, numbootstraps = 100, errormode=:STD,
-     smoothingmethod=:gaussian, smoothingbins=5)
+    time_windows = [-1 0; 0 .5; .5 1]
+    spike_rates = ComputeSpikeRate(spike_times, time_windows)
