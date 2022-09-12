@@ -1,2 +1,2 @@
-# Neuro
- Functions for neuroscience
+# Neuro.jl
+ Julia functions for neuroscience.
