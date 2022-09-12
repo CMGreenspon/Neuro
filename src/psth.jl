@@ -1,10 +1,18 @@
 @userplot PSTH
 """
-Testing
+psth(spike_times; groupidx = nothing, binresolution = .05, windowedges = nothing, groupcolor = nothing,
+    subsamplemethod = nothing, numfolds = 5, numbootstraps = 100, bootstrapprop = 0.1, errormode=:STD,
+    smoothingmethod = nothing, smoothingbins = nothing)
+
+Takes previously aligned spike times from a single or multiple groups and constructs a peri-stimulus time
+histogram from the times. Allows for variable binresolution, subsampling methods for estimates of variance, and smoothing.
+
+Input arguments:
+spike_times
 """
 psth
 
-@recipe function f(p::PSTH; binresolution = .05, windowedges = nothing, groupidx = nothing,  groupcolor = nothing,
+@recipe function f(p::PSTH; groupidx = nothing, binresolution = .05, windowedges = nothing, groupcolor = nothing,
      subsamplemethod = nothing, numfolds = 5, numbootstraps = 100, bootstrapprop = 0.1, errormode=:STD,
      smoothingmethod = nothing, smoothingbins = nothing)
     # Ensure that only one argument is given

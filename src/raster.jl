@@ -84,15 +84,7 @@ raster
             x := collect(Iterators.flatten(group_x))
             y := collect(Iterators.flatten(group_y))
             # Set color
-            if groupcolor === nothing
-                linecolor := palette(color_palette)[g]
-            else
-                if length(groupcolor) == num_groups
-                    linecolor := groupcolor[g]
-                else
-                    linecolor := groupcolor[t]
-                end
-            end
+            linecolor := groupcolor[g]
             linewidth --> .5
             () # Supress implicit return
         end
