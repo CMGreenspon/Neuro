@@ -7,8 +7,38 @@ psth(spike_times; groupidx = nothing, binresolution = .05, windowedges = nothing
 Takes previously aligned spike times from a single or multiple groups and constructs a peri-stimulus time
 histogram from the times. Allows for variable binresolution, subsampling methods for estimates of variance, and smoothing.
 
-Input arguments:
-spike_times
+Input arguments: (Required type, *default value*)
+    spike_times (Vector{Vector{AbstractFloat}}) - Vector of vectors where each element contains spike times for a given trial
+        with a common reference. Will accept a Vector{AbstractFloat} and treat as a single trial. 
+        
+    groupidx (Vector{Int}, *nothing*) - The group identity of each vector in spike_times. All trials with the same group ID will
+        be grouped together. If no value is given (*nothing*) then it is assumed that all trials are from the same group.
+        
+    binresolution (AbstractFloat, *0.05*) - time duration in units of spike times that the histogram will use for bin size.
+    
+    windowedges (Vector{Number} of length 2, *nothing*) - minimum and maximum spike times for histogram. Bin edges are created to be
+        windowedges[1]:binresolution:windowedges[2]. If *nothing* then the minimum and maximum of spike_times is used.
+        
+    groupcolor (Symbol, RGB, Vector{Symbol or RGB}, *nothing") - the desired color for each group. If groupcolor is given then
+        the number of inputs must match the number of groups (length(unique(groupidx))). If nothing then will use color_palette.
+        
+    subsamplemethod (:NFold or :Bootstrap, *nothing*) - method of subsampling to use to generate subgroups where the histogram computed
+        for each subgroup, and the mean and error will be computed from those subgroups.
+        If :NFold then each group will be split into *numfolds* equally sized subgroups.
+        If :Bootstrap then *numbootstraps* subgroups of *bootstrapprop*% of the group trials will be made.
+        
+    numfolds (Int, *5*) - how many folds to create for each group.
+    
+    numbootstraps (Int, *100*) - how many bootstraps to draw for each group.
+    
+    bootstrapprop (AbstractFloat, *0.1*) - what proportion of the trials to draw for each bootstrap.
+    
+    errormode (*:STD*, :SEM, :IQR) - which error metric to use within group.
+    
+    smoothingmethod (:mean, :median, :gaussian, *nothing*) - whether to use movingmean, movingmedian or a gaussian smoothing kernel
+            to smooth out the PSTH before plotting. If declared then *smoothingbins* must also be declared.
+            
+    smoothingbins (Int) - The number of bins over which to apply the smoothing operation.
 """
 psth
 
@@ -25,7 +55,7 @@ psth
         max_time = round(maximum(maximum.(spike_times; init=0))/binresolution) * binresolution
         histedges = min_time:binresolution:max_time
     else
-        if windowedges isa Vector{T} where T<:Number && length(windowedges) == 2
+        if windowedges isa Vector{T} where T<:Number && length(windowedges) == 2 && windowedges[1] < windowedges[2]
             histedges = windowedges[1]:binresolution:windowedges[2]
         else
             error("Window edges must be a 2-element vector with ints or floats")
@@ -71,13 +101,13 @@ psth
     end
 
     # Check groupcolor format
-    if groupcolor === nothing
-            groupcolor = palette(color_palette)[repeat(collect(1:16),Int(ceil(num_groups/length(palette(color_palette)))))]
-    elseif isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
-        groupcolor = repeat([groupcolor], num_trials)
-    elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
-        if groupidx !== nothing && num_groups != length(groupcolor)
-            error("Number of groupidx != number of group colors")
+    if groupcolor !== nothing
+        if isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
+            groupcolor = repeat([groupcolor], num_trials)
+        elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
+            if groupidx !== nothing && num_groups != length(groupcolor)
+                error("Number of groupidx != number of group colors")
+            end
         end
     end
 
@@ -134,7 +164,9 @@ psth
                     y := smoothhist(group_hist.weights, method = smoothingmethod, windowsize = smoothingbins)
                 end
                 # line
-                linecolor := groupcolor[g]
+                if groupcolor !== nothing
+                    linecolor := groupcolor[g]
+                end
                 () # Supress implicit return
             end
         elseif subsamplemethod == :Bootstrap || subsamplemethod == :NFold
@@ -172,6 +204,8 @@ psth
                 y_lower = vec(mapslices(Y -> percentile(Y, 25), group_hist, dims=1))
                 y_upper = vec(mapslices(Y -> percentile(Y, 75), group_hist, dims=1))
                 y_error = (y_center .- y_lower, y_upper .- y_center) # Difference from center value
+            else
+                error("Invalid errormode - must be :STD, :SEM, or :IQR")
             end
 
             # Make ribbon plot 
@@ -185,8 +219,10 @@ psth
                     ribbon := smoothhist(y_error, method = smoothingmethod, windowsize = smoothingbins)
                 end
                 fillalpha --> .1
-                linecolor := groupcolor[g]
-                fillcolor := groupcolor[g]
+                if groupcolor !== nothing
+                    linecolor := groupcolor[g]
+                    fillcolor := groupcolor[g]
+                end
                 () # Supress implicit return
             end
         end

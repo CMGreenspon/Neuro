@@ -4,7 +4,7 @@ Testing
 """
 raster
 
-@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, y_offset = 0, tick_height = .475)
+@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .475)
     # Ensure that only one argument is given
     spike_times = r.args[1]
     num_trials = size(spike_times,1)
@@ -35,27 +35,36 @@ raster
     end
 
     # Check groupcolor format
-    if groupcolor === nothing
-        if groupidx !== nothing
-            groupcolor = palette(color_palette)[repeat(collect(1:16),Int(ceil(num_groups/length(palette(color_palette)))))]
-            groupcolor = groupcolor[1:num_groups]
-        else groupidx === nothing
-            groupcolor = palette(color_palette)[repeat(collect(1:16),Int(ceil(num_trials/length(palette(color_palette)))))]
+    if groupcolor !== nothing
+        if isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
+            groupcolor = repeat([groupcolor], num_trials)
+        elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
+            if groupidx === nothing && length(groupcolor) != num_trials
+                error("Number of trials != number of colors, consider defining groupidx")
+            elseif groupidx !== nothing && num_groups != length(groupcolor)
+                error("Number of groupidx != number of group colors")
+            end
         end
-    elseif isa(groupcolor, Union{Symbol, RGB{Float64}, RGBA{Float64}})
-        groupcolor = repeat([groupcolor], num_trials)
-    elseif isa(groupcolor, Union{Vector{Symbol}, Vector{RGB{Float64}}, Vector{RGBA{Float64}}})
-        if groupidx === nothing && length(groupcolor) != num_trials
-            error("Number of trials != number of colors, consider defining groupidx")
-        elseif groupidx !== nothing && num_groups != length(groupcolor)
-            error("Number of groupidx != number of group colors")
+    end
+
+    # Compute y_offset
+    num_series = length(plotattributes[:plot_object].series_list)
+    if num_series == 0
+        ti = 1
+    else
+        y_max = 0
+        for s = 1:num_series
+            s_y_max = maximum(filter(!isnan,plotattributes[:plot_object].series_list[s][:y]))
+            if s_y_max > y_max
+                y_max = s_y_max
+            end
         end
+        ti = y_max + 1;
     end
 
     # Begin the plot
     seriestype := :path
     legend --> false
-    ti = 1
     for g = 1:num_groups
         # Work out wich spike times belong to which group
         if num_groups == 1
@@ -73,8 +82,8 @@ raster
             group_x[t] = vec(transpose(cat(spike_times[group_trial_idx[t]],
                                            spike_times[group_trial_idx[t]],
                                            fill(NaN, num_trial_spikes), dims = 2)))
-            group_y[t] = vec(transpose(cat(fill(ti-tick_height+y_offset, num_trial_spikes),
-                                           fill(ti+tick_height+y_offset, num_trial_spikes),
+            group_y[t] = vec(transpose(cat(fill(ti-tick_height, num_trial_spikes),
+                                           fill(ti+tick_height, num_trial_spikes),
                                            fill(NaN, num_trial_spikes), dims = 2)))
             ti += 1
         end
@@ -84,7 +93,9 @@ raster
             x := collect(Iterators.flatten(group_x))
             y := collect(Iterators.flatten(group_y))
             # Set color
-            linecolor := groupcolor[g]
+            if groupcolor !== nothing
+                linecolor := groupcolor[g]
+            end
             linewidth --> .5
             () # Supress implicit return
         end
