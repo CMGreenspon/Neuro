@@ -1,6 +1,6 @@
 @userplot Raster
 """
-raster(spike_times; groupidx = nothing,  groupcolor = nothing, tick_height = .475)
+# raster(spike_times; groupidx = nothing,  groupcolor = nothing, tick_height = .475)
 
     Creates a raster plot from spike times.
 
