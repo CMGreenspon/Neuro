@@ -5,7 +5,7 @@
 Takes previously aligned spike times from a single or multiple groups and constructs a peri-stimulus time
 histogram from the times. Allows for variable binresolution, subsampling methods for estimates of variance, and smoothing.
 
-Input arguments: (Required type, *default value*)
+## Input arguments: (Required type, *default value*)
 
     spike_times (Vector{Vector{AbstractFloat}}) - Vector of vectors where each element contains spike times for a given trial
         with a common reference. Will accept a Vector{AbstractFloat} and treat as a single trial. 

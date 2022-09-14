@@ -1,18 +1,28 @@
 @userplot Raster
 """
-# raster(spike_times; groupidx = nothing,  groupcolor = nothing, tick_height = .475)
+### raster(spike_times; groupidx = nothing,  groupcolor = nothing, tick_height = .475)
 
-    Creates a raster plot from spike times.
+Creates a raster plot from spike times. Note that VSCode has performance issues if not using :png - eg "gr(fmt = :png)".
 
-    Input arguments: (Required type, *default value*)
+## Input arguments: (Required type, *default value*)
 
-        spike_times (Vector{Vector{AbstractFloat}}) - Vector of vectors where each element contains spike times for a given trial
-                with a common reference. Will accept a Vector{AbstractFloat} and treat as a single trial. 
+    spike_times (Vector{Vector{AbstractFloat}}) - Vector of vectors where each element contains spike times for a given trial
+            with a common reference. Will accept a Vector{AbstractFloat} and treat as a single trial. 
 
-        groupidx (Vector{Int}, *nothing*) - The group identity of each vector in spike_times. All trials with the same group ID will
-            be grouped together. If no value is given (*nothing*) then it is assumed that all trials are from the same group.
+    groupidx (Vector{Int}, *nothing*) - The group identity of each vector in spike_times. All trials with the same group ID will
+        be grouped together. If no value is given (*nothing*) then it is assumed that all trials are from the same group.
 
-        tick_height (AbstractFloat, *.95*) - how much of a row each tick should take up.
+    tick_height (AbstractFloat, *.95*) - how much of a row each tick should take up.
+
+### Example
+```julia
+max_spikes = 1000
+    num_trials = 100
+    groups = [rand(1:2)  for i in 1:num_trials]
+    spike_times = [rand(rand(1:max_spikes)) for i in 1:num_trials]
+    raster(spike_times, groupidx = groups)
+    raster!(spike_times, groupidx = groups)
+```
 """
 raster
 
