@@ -10,34 +10,34 @@ histogram from the times. Allows for variable binresolution, subsampling methods
 Input arguments: (Required type, *default value*)
     spike_times (Vector{Vector{AbstractFloat}}) - Vector of vectors where each element contains spike times for a given trial
         with a common reference. Will accept a Vector{AbstractFloat} and treat as a single trial. 
-        
+
     groupidx (Vector{Int}, *nothing*) - The group identity of each vector in spike_times. All trials with the same group ID will
         be grouped together. If no value is given (*nothing*) then it is assumed that all trials are from the same group.
-        
+
     binresolution (AbstractFloat, *0.05*) - time duration in units of spike times that the histogram will use for bin size.
-    
+
     windowedges (Vector{Number} of length 2, *nothing*) - minimum and maximum spike times for histogram. Bin edges are created to be
         windowedges[1]:binresolution:windowedges[2]. If *nothing* then the minimum and maximum of spike_times is used.
-        
+
     groupcolor (Symbol, RGB, Vector{Symbol or RGB}, *nothing") - the desired color for each group. If groupcolor is given then
         the number of inputs must match the number of groups (length(unique(groupidx))). If nothing then will use color_palette.
-        
+
     subsamplemethod (:NFold or :Bootstrap, *nothing*) - method of subsampling to use to generate subgroups where the histogram computed
         for each subgroup, and the mean and error will be computed from those subgroups.
         If :NFold then each group will be split into *numfolds* equally sized subgroups.
         If :Bootstrap then *numbootstraps* subgroups of *bootstrapprop*% of the group trials will be made.
-        
+
     numfolds (Int, *5*) - how many folds to create for each group.
-    
+
     numbootstraps (Int, *100*) - how many bootstraps to draw for each group.
-    
+
     bootstrapprop (AbstractFloat, *0.1*) - what proportion of the trials to draw for each bootstrap.
-    
+
     errormode (*:STD*, :SEM, :IQR) - which error metric to use within group.
-    
+
     smoothingmethod (:mean, :median, :gaussian, *nothing*) - whether to use movingmean, movingmedian or a gaussian smoothing kernel
             to smooth out the PSTH before plotting. If declared then *smoothingbins* must also be declared.
-            
+
     smoothingbins (Int) - The number of bins over which to apply the smoothing operation.
 """
 psth
@@ -229,7 +229,7 @@ psth
     end
 end
 
-
+# Unexported subfunction for smoothing the histogram
 function smoothhist(spike_hist::Vector{<:Number}; method = :mean, windowsize=5)
     # Initalize output to be the same size as the input
     smoothed_hist = zeros(length(spike_hist))
@@ -241,7 +241,7 @@ function smoothhist(spike_hist::Vector{<:Number}; method = :mean, windowsize=5)
     half_win_idx = Int(floor(round(windowsize/2)))
 
     # Use desired smoothing method
-    # Though it's cleaner to allocate indices and then apply it is 30% slower
+    # Though it's cleaner to allocate indices and then apply it's ~30% slower
     if method == :mean
         for i = 1:length(spike_hist)
             if i <= half_win_idx

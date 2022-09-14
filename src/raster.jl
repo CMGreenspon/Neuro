@@ -1,10 +1,22 @@
 @userplot Raster
 """
-Testing
+raster(spike_times; groupidx = nothing,  groupcolor = nothing, tick_height = .475)
+
+Creates a raster plot from spike times.
+
+Input arguments: (Required type, *default value*)
+
+spike_times (Vector{Vector{AbstractFloat}}) - Vector of vectors where each element contains spike times for a given trial
+        with a common reference. Will accept a Vector{AbstractFloat} and treat as a single trial. 
+
+groupidx (Vector{Int}, *nothing*) - The group identity of each vector in spike_times. All trials with the same group ID will
+    be grouped together. If no value is given (*nothing*) then it is assumed that all trials are from the same group.
+
+tick_height (AbstractFloat, *.95*) - how much of a row each tick should take up.
 """
 raster
 
-@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .475)
+@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .95)
     # Ensure that only one argument is given
     spike_times = r.args[1]
     num_trials = size(spike_times,1)
@@ -65,6 +77,7 @@ raster
     # Begin the plot
     seriestype := :path
     legend --> false
+    half_tick_height = tick_height / 2
     for g = 1:num_groups
         # Work out wich spike times belong to which group
         if num_groups == 1
@@ -82,8 +95,8 @@ raster
             group_x[t] = vec(transpose(cat(spike_times[group_trial_idx[t]],
                                            spike_times[group_trial_idx[t]],
                                            fill(NaN, num_trial_spikes), dims = 2)))
-            group_y[t] = vec(transpose(cat(fill(ti-tick_height, num_trial_spikes),
-                                           fill(ti+tick_height, num_trial_spikes),
+            group_y[t] = vec(transpose(cat(fill(ti-half_tick_height, num_trial_spikes),
+                                           fill(ti+half_tick_height, num_trial_spikes),
                                            fill(NaN, num_trial_spikes), dims = 2)))
             ti += 1
         end
