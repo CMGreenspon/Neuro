@@ -1,6 +1,6 @@
 @userplot PSTH
 """
-psth(spike_times; groupidx = nothing, binresolution = .05, windowedges = nothing, groupcolor = nothing,
+# psth(spike_times; groupidx = nothing, binresolution = .05, windowedges = nothing, groupcolor = nothing,
     subsamplemethod = nothing, numfolds = 5, numbootstraps = 100, bootstrapprop = 0.1, errormode=:STD,
     smoothingmethod = nothing, smoothingbins = nothing)
 
@@ -8,7 +8,7 @@ psth(spike_times; groupidx = nothing, binresolution = .05, windowedges = nothing
     histogram from the times. Allows for variable binresolution, subsampling methods for estimates of variance, and smoothing.
 
     Input arguments: (Required type, *default value*)
-    
+
         spike_times (Vector{Vector{AbstractFloat}}) - Vector of vectors where each element contains spike times for a given trial
             with a common reference. Will accept a Vector{AbstractFloat} and treat as a single trial. 
 

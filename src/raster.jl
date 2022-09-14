@@ -5,7 +5,7 @@ raster(spike_times; groupidx = nothing,  groupcolor = nothing, tick_height = .47
     Creates a raster plot from spike times.
 
     Input arguments: (Required type, *default value*)
-    
+
         spike_times (Vector{Vector{AbstractFloat}}) - Vector of vectors where each element contains spike times for a given trial
                 with a common reference. Will accept a Vector{AbstractFloat} and treat as a single trial. 
 
