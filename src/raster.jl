@@ -105,7 +105,7 @@ raster
         for t = 1:num_group_trials
             num_trial_spikes = length(spike_times[group_trial_idx[t]])
             # Check to skip empty trials
-            if num_trial_spikes == 0 && skip_empty
+            if (num_trial_spikes == 0 || all(isnan.(spike_times[group_trial_idx[t]]))) && skip_empty
                 group_x[t] = [NaN]
                 group_y[t] = [NaN]
             else # Make raster tick array
