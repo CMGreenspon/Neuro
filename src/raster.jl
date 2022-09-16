@@ -106,7 +106,8 @@ raster
             num_trial_spikes = length(spike_times[group_trial_idx[t]])
             # Check to skip empty trials
             if num_trial_spikes == 0 && skip_empty
-                continue
+                group_x[t] = [NaN]
+                group_y[t] = [NaN]
             end
             # Make raster tick array
             group_x[t] = vec(transpose(cat(spike_times[group_trial_idx[t]],
