@@ -1,6 +1,6 @@
 @userplot Raster
 """
-### raster(spike_times; groupidx = nothing,  groupcolor = nothing, tick_height = .475)
+### raster(spike_times; args
 
 Creates a raster plot from spike times. Note that VSCode has performance issues if not using :png - eg "gr(fmt = :png)".
 
@@ -14,6 +14,8 @@ Creates a raster plot from spike times. Note that VSCode has performance issues 
 
     tick_height (AbstractFloat, *.95*) - how much of a row each tick should take up.
 
+    skip_empty (Bool, *false*) - whether or not to skip empty vectors. If false then an empty row will appear in the raster.
+
 ### Example
 ```julia
 max_spikes = 1000
@@ -26,7 +28,7 @@ max_spikes = 1000
 """
 raster
 
-@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .95)
+@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .95, skip_empty = false)
     # Ensure that only one argument is given
     spike_times = r.args[1]
 
@@ -102,6 +104,11 @@ raster
         group_y = Vector{Vector{Float64}}(undef,num_group_trials)
         for t = 1:num_group_trials
             num_trial_spikes = length(spike_times[group_trial_idx[t]])
+            # Check to skip empty trials
+            if num_trial_spikes == 0 && skip_empty
+                continue
+            end
+            # Make raster tick array
             group_x[t] = vec(transpose(cat(spike_times[group_trial_idx[t]],
                                            spike_times[group_trial_idx[t]],
                                            fill(NaN, num_trial_spikes), dims = 2)))
