@@ -29,7 +29,6 @@ raster
 @recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .95)
     # Ensure that only one argument is given
     spike_times = r.args[1]
-    num_trials = size(spike_times,1)
 
     # Determine if a single trial or multiple trials are given
     if spike_times isa Vector{T} where T<:AbstractFloat
@@ -37,6 +36,7 @@ raster
     elseif !(spike_times isa Vector{Vector{T}} where T<:AbstractFloat)
         error("Spike times must be a Vector{Float} or Vector{Vector{Float}}.")
     end
+    num_trials = size(spike_times,1) # Needs to be computed after check for single trial inputs
 
     # If groupidx !== nothing then make sure it has the same #trials as spike_times
     if groupidx === nothing
