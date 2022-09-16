@@ -11,6 +11,9 @@ function ComputeSpikeRate(spike_times::Vector{Vector{Float64}}, time_windows::Ab
     # Iterate through each trial and compute rate in each period
     rate_output = fill(NaN, num_trials, num_periods)
     for t = 1:num_trials
+        if all(isnan.(spike_times[t]))
+            continue
+        end
         for p = 1:num_periods
             if inclusive_edge == :right
                 rate_output[t,p] = sum((spike_times[t] .> time_windows[p,1]) .& (spike_times[t] .<= time_windows[p,2])) / durations[p]
