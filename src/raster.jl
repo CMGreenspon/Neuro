@@ -108,15 +108,15 @@ raster
             if num_trial_spikes == 0 && skip_empty
                 group_x[t] = [NaN]
                 group_y[t] = [NaN]
+            else # Make raster tick array
+                group_x[t] = vec(transpose(cat(spike_times[group_trial_idx[t]],
+                                            spike_times[group_trial_idx[t]],
+                                            fill(NaN, num_trial_spikes), dims = 2)))
+                group_y[t] = vec(transpose(cat(fill(ti-half_tick_height, num_trial_spikes),
+                                            fill(ti+half_tick_height, num_trial_spikes),
+                                            fill(NaN, num_trial_spikes), dims = 2)))
+                ti += 1
             end
-            # Make raster tick array
-            group_x[t] = vec(transpose(cat(spike_times[group_trial_idx[t]],
-                                           spike_times[group_trial_idx[t]],
-                                           fill(NaN, num_trial_spikes), dims = 2)))
-            group_y[t] = vec(transpose(cat(fill(ti-half_tick_height, num_trial_spikes),
-                                           fill(ti+half_tick_height, num_trial_spikes),
-                                           fill(NaN, num_trial_spikes), dims = 2)))
-            ti += 1
         end
 
         @series begin
