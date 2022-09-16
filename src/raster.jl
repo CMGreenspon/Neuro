@@ -32,7 +32,7 @@ raster
     num_trials = size(spike_times,1)
 
     # Determine if a single trial or multiple trials are given
-    if isa(spike_times, Vector{AbstractFloat})
+    if spike_times isa Vector{T} where T<:AbstractFloat
         spike_times = [spike_times] # Assert Vector{Vector}
     elseif !(spike_times isa Vector{Vector{T}} where T<:AbstractFloat)
         error("Spike times must be a Vector{Float} or Vector{Vector{Float}}.")

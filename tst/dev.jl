@@ -6,16 +6,14 @@ gr(fmt = :png)
     groups = [rand(1:2)  for i in 1:num_trials]
     spike_times = [rand(rand(1:max_spikes)) for i in 1:num_trials]
     raster(spike_times, groupidx = groups)
-    raster!(spike_times, groupidx = groups)
 
-    
 # ## PSTH
-#     max_spikes = 100
-#     num_trials = 500
-#     groups = [rand(1:4)  for i in 1:num_trials]
-#     spike_times = [randn(rand(1:max_spikes)) .+ groups[i] for i in 1:num_trials]
-#     psth!(spike_times, groupidx = groups, subsamplemethod=:Bootstrap, numbootstraps = 100, errormode=:STD,
-#      smoothingmethod=:gaussian, smoothingbins=5)
+    max_spikes = 100
+    num_trials = 500
+    groups = [rand(1:4)  for i in 1:num_trials]
+    spike_times = [randn(rand(1:max_spikes)) .+ groups[i] for i in 1:num_trials]
+    psth(spike_times, groupidx = groups, subsamplemethod=:Bootstrap, numbootstraps = 100, errormode=:STD,
+     smoothingmethod=:gaussian, smoothingbins=5)
 
 # ## Spike Rates
 #     max_spikes = 1000

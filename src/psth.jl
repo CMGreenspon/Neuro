@@ -75,7 +75,7 @@ psth
     histcenters = histedges[1:end-1] .+ (binresolution/2)
     
     # Determine if a single trial or multiple trials are given
-    if spike_times isa Vector{AbstractFloat}
+    if spike_times isa Vector{T} where T<:AbstractFloat
         spike_times = [spike_times] # Assert Vector{Vector}
     elseif !(spike_times isa Vector{Vector{T}} where T<:AbstractFloat)
         error("Spike times must be a Vector{Float} or Vector{Vector{Float}}.")
