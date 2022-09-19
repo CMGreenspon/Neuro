@@ -21,6 +21,8 @@ Creates a raster plot from spike times. Note that VSCode has performance issues 
 
     y_offset (Int, *nothing*) - the starting y-value for the raster ticks. If nothing then will start at current y-max.
 
+    group_offset (Number, 0) - how much spacing to add inbetween groups of trials.
+
 ### Example
 ```julia
 max_spikes = 1000
@@ -33,7 +35,14 @@ max_spikes = 1000
 """
 raster
 
-@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .95, skip_empty = false, skip_nan = true, y_offset = nothing)
+@recipe function f(r::Raster;  groupidx = nothing,
+                               groupcolor = nothing,
+                               tick_height = .95,
+                               skip_empty = false,
+                               skip_nan = true,
+                               y_offset = nothing,
+                               group_offset = 0)
+
     # Ensure that only one argument is given
     spike_times = r.args[1]
 
@@ -78,14 +87,14 @@ raster
 
     # Compute y_offset
     if y_offset !== nothing
-        ti = y_offset
-    else # Assumes it is being added to an existing raster plot
         if !(y_offset isa Int)
             error("y_offset must be an integer.")
         end
+        ti = y_offset
+    else # Assumes it is being added to an existing raster plot
         num_series = length(plotattributes[:plot_object].series_list)
         if num_series == 0
-            ti = 1
+            ti = 0
         else
             y_max = 0
             for s = 1:num_series
@@ -94,14 +103,13 @@ raster
                     y_max = s_y_max
                 end
             end
-            ti = y_max + 1;
+            ti = y_max + group_offset;
         end
     end
 
     # Begin the plot
     seriestype := :path
     legend --> false
-    half_tick_height = tick_height / 2
     for g = 1:num_groups
         # Work out wich spike times belong to which group
         if num_groups == 1
@@ -124,8 +132,8 @@ raster
                 group_x[t] = vec(transpose(cat(spike_times[group_trial_idx[t]],
                                             spike_times[group_trial_idx[t]],
                                             fill(NaN, num_trial_spikes), dims = 2)))
-                group_y[t] = vec(transpose(cat(fill(ti-half_tick_height, num_trial_spikes),
-                                            fill(ti+half_tick_height, num_trial_spikes),
+                group_y[t] = vec(transpose(cat(fill(ti, num_trial_spikes),
+                                            fill(ti+tick_height, num_trial_spikes),
                                             fill(NaN, num_trial_spikes), dims = 2)))
                 ti += 1
             end
@@ -142,5 +150,7 @@ raster
             linewidth --> .5
             () # Supress implicit return
         end
+
+        ti += group_offset
     end
 end
