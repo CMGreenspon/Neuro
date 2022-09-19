@@ -16,6 +16,11 @@ Creates a raster plot from spike times. Note that VSCode has performance issues 
 
     skip_empty (Bool, *false*) - whether or not to skip empty vectors. If false then an empty row will appear in the raster.
 
+    skip_nan (Bool, *true*) - whether or not to skip vectors containing only NaNs (useful for marking bad trials).
+        If false then an empty row will appear in the raster.
+
+    y_offset (Int, *nothing*) - the starting y-value for the raster ticks. If nothing then will start at current y-max.
+
 ### Example
 ```julia
 max_spikes = 1000
@@ -28,7 +33,7 @@ max_spikes = 1000
 """
 raster
 
-@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .95, skip_empty = false)
+@recipe function f(r::Raster;  groupidx = nothing,  groupcolor = nothing, tick_height = .95, skip_empty = false, skip_nan = true, y_offset = nothing)
     # Ensure that only one argument is given
     spike_times = r.args[1]
 
@@ -72,18 +77,25 @@ raster
     end
 
     # Compute y_offset
-    num_series = length(plotattributes[:plot_object].series_list)
-    if num_series == 0
-        ti = 1
-    else
-        y_max = 0
-        for s = 1:num_series
-            s_y_max = maximum(filter(!isnan,plotattributes[:plot_object].series_list[s][:y]))
-            if s_y_max > y_max
-                y_max = s_y_max
-            end
+    if y_offset !== nothing
+        ti = y_offset
+    else # Assumes it is being added to an existing raster plot
+        if !(y_offset isa Int)
+            error("y_offset must be an integer.")
         end
-        ti = y_max + 1;
+        num_series = length(plotattributes[:plot_object].series_list)
+        if num_series == 0
+            ti = 1
+        else
+            y_max = 0
+            for s = 1:num_series
+                s_y_max = maximum(filter(!isnan,plotattributes[:plot_object].series_list[s][:y]))
+                if s_y_max > y_max
+                    y_max = s_y_max
+                end
+            end
+            ti = y_max + 1;
+        end
     end
 
     # Begin the plot
@@ -105,7 +117,7 @@ raster
         for t = 1:num_group_trials
             num_trial_spikes = length(spike_times[group_trial_idx[t]])
             # Check to skip empty trials
-            if (num_trial_spikes == 0 || all(isnan.(spike_times[group_trial_idx[t]]))) && skip_empty
+            if (num_trial_spikes == 0  && skip_empty) || (all(isnan.(spike_times[group_trial_idx[t]])) && skip_nan)
                 group_x[t] = [NaN]
                 group_y[t] = [NaN]
             else # Make raster tick array
