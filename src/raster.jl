@@ -110,6 +110,7 @@ raster
     # Begin the plot
     seriestype := :path
     legend --> false
+    grid --> false
     for g = 1:num_groups
         # Work out wich spike times belong to which group
         if num_groups == 1

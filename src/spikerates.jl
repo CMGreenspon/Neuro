@@ -1,8 +1,18 @@
-function ComputeSpikeRate(spike_times::Vector{Vector{Float64}}, time_windows::AbstractMatrix; inclusive_edge = :right)
+function ComputeSpikeRate(spike_times::Vector{Vector{Float64}}, time_windows; inclusive_edge = :right)
     num_trials = length(spike_times)
-    num_periods = size(time_windows,1)
-    if size(time_windows,2) > 2
-        error("time_windows must be an Nx2 matrix")
+
+    # Determine time windows/bin edges
+    if time_windows isa AbstractMatrix
+        num_periods = size(time_windows,1)
+        if size(time_windows,2) > 2
+            error("time_windows{AbstractMatrix} must be an Nx2 matrix")
+        end
+
+    elseif time_windows isa AbstractRange
+        time_window_vec = collect(time_windows)
+        time_windows = hcat(time_window_vec[1:end-1], time_window_vec[2:end])
+    else
+        error("Unsupported time_windows. Must be an AbstractMatrix (Nx2) or an AbstractRange")
     end
 
     # Compute durations ahead of time

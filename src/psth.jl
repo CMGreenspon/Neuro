@@ -73,12 +73,14 @@ psth
         min_time = round(minimum(minimum.(spike_times; init=0))/binresolution) * binresolution
         max_time = round(maximum(maximum.(spike_times; init=0))/binresolution) * binresolution
         histedges = min_time:binresolution:max_time
-    else
-        if windowedges isa Vector{T} where T<:Number && length(windowedges) == 2 && windowedges[1] < windowedges[2]
+    elseif windowedges isa Vector
+        if eltype(windowedges) <: Number && length(windowedges) == 2 && windowedges[1] < windowedges[2]
             histedges = windowedges[1]:binresolution:windowedges[2]
         else
             error("Window edges must be a 2-element vector with ints or floats")
         end
+    elseif windowedges isa AbstractRange
+        histedges = collect(windowedges)
     end
     # For the x-values of the plot
     histcenters = histedges[1:end-1] .+ (binresolution/2)
