@@ -1,4 +1,4 @@
-function ComputeSpikeRate(spike_times::Vector{Vector{Float64}}, time_windows; inclusive_edge = :right)
+function ComputeSpikeRates(spike_times::Vector{Vector{Float64}}, time_windows; inclusive_edge = :right)
     num_trials = length(spike_times)
 
     # Determine time windows/bin edges
