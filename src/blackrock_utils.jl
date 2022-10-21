@@ -71,10 +71,11 @@ function LoadUtahArrayMap(cmp_path::String; header_row::Int = 0)
         row_offset = minimum(u_rows)
 
         # Prepare outputs
+        # Prepare outputs
         bank_matrix = fill("", array_size)
-        row_matrix = fill(NaN, array_size)
-        col_matrix = fill(NaN, array_size)
-        electrode_matrix = fill(NaN, array_size)
+        row_matrix = fill(0, array_size)
+        col_matrix = fill(0, array_size)
+        electrode_matrix = fill(0, array_size)
         label_matrix = fill("", array_size)
 
         # Iterate through df to get info

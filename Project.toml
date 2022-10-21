@@ -1,7 +1,7 @@
 name = "Neuro"
 uuid = "34ea14cc-a9c6-41a6-b94e-148cd36b88a4"
 authors = ["CMGreenspon <charles.greenspon@gmail.com>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
