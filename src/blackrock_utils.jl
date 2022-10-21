@@ -1,3 +1,21 @@
+mutable struct NEV
+    MetaTags::Dict
+    ElectrodeInfo::DataFrame
+    Data::Struct
+    IOLabels::Vector{String}
+end
+
+function OpenNEV(filepath::String;
+                 load_waveforms::Bool = false,
+                 show_report::Bool = false,
+                 verbose::Bool = true,
+                 digital_bits::Int = 16,
+                 time_range::Vector{Float64},
+                 cereplex_direct::Bool = false)
+
+
+end
+
 function LoadUtahArrayMap(cmp_path::String; header_row::Int = 0)
     if !isfile(cmp_path)
         error("Could not find '$cmp_path'")
@@ -36,8 +54,8 @@ function LoadUtahArrayMap(cmp_path::String; header_row::Int = 0)
         array_num = fill(0, size(headless_df,1))
         for r = axes(headless_df,1)
             array_num[r] = parse(Int, headless_df[r,num_columns][5]) # Take N from each row (assumes N < 10)
-            num_arrays = length(unique(array_num))
         end
+        num_arrays = length(unique(array_num))
     else
         num_arrays = 1
         array_num = fill(1, size(headless_df,1))

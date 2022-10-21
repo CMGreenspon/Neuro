@@ -11,7 +11,8 @@ module Neuro
     # Neuro.jl
     include("psth.jl")
     include("raster.jl")
-    include("spikerates.jl")
+    include("spike_rates.jl")
+    # include("train_metrics.jl")
     include("blackrock_utils.jl")
 
 end # module Neuro

@@ -3,7 +3,6 @@ function ComputeSpikeRates(spike_times::Vector{Vector{Float64}}, time_windows; i
 
     # Determine time windows/bin edges
     if time_windows isa AbstractMatrix
-        num_periods = size(time_windows,1)
         if size(time_windows,2) > 2
             error("time_windows{AbstractMatrix} must be an Nx2 matrix")
         end
@@ -14,6 +13,7 @@ function ComputeSpikeRates(spike_times::Vector{Vector{Float64}}, time_windows; i
     else
         error("Unsupported time_windows. Must be an AbstractMatrix (Nx2) or an AbstractRange")
     end
+    num_periods = size(time_windows,1)
 
     # Compute durations ahead of time
     durations = mapslices(diff, time_windows, dims=2)
