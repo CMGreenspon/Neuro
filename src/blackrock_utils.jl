@@ -56,7 +56,7 @@ function LoadUtahArrayMap(cmp_path::String; header_row::Int = 0)
     headless_df = hcat(headless_df, array_num) # Append array number as it makes filtering by row easier
 
     # Build array map
-    array_vec = Vector(Dict, num_arrays)
+    array_vec = Vector{Dict}(undef,num_arrays)
     for a = 1:num_arrays
         # Get array specific values
         array_df = filter(row -> row["x1"] == a, headless_df)
