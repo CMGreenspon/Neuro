@@ -1,20 +1,13 @@
-mutable struct NEV
-    MetaTags::Dict
-    ElectrodeInfo::DataFrame
-    Data::Struct
-    IOLabels::Vector{String}
-end
-
-function OpenNEV(filepath::String;
-                 load_waveforms::Bool = false,
-                 show_report::Bool = false,
-                 verbose::Bool = true,
-                 digital_bits::Int = 16,
-                 time_range::Vector{Float64},
-                 cereplex_direct::Bool = false)
+# function OpenNEV(filepath::String;
+#                  load_waveforms::Bool = false,
+#                  show_report::Bool = false,
+#                  verbose::Bool = true,
+#                  digital_bits::Int = 16,
+#                  time_range::Vector{Float64},
+#                  cereplex_direct::Bool = false)
 
 
-end
+# end
 
 function LoadUtahArrayMap(cmp_path::String; header_row::Int = 0)
     if !isfile(cmp_path)
