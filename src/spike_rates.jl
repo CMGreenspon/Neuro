@@ -19,7 +19,7 @@ function ComputeSpikeRates(spike_times::Vector{Vector{Float64}}, time_windows; i
     durations = mapslices(diff, time_windows, dims=2)
     
     # Iterate through each trial and compute rate in each period
-    rate_output = fill(0, num_trials, num_periods)
+    rate_output = fill(0.0, num_trials, num_periods)
     for t = 1:num_trials
         if all(isnan.(spike_times[t]))
             continue
