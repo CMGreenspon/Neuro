@@ -26,16 +26,16 @@ function ComputeSpikeRates(spike_times::Union{Vector{Float64}, Vector{Vector{Flo
     durations = mapslices(diff, time_windows, dims=2)
     
     # Iterate through each trial and compute rate in each period
-    rate_output = fill(0.0, num_periods, num_trials)
+    rate_output = fill(0.0, num_trials, num_periods)
     for t = 1:num_trials
         if all(isnan.(spike_times[t]))
             continue
         end
         for p = 1:num_periods
             if inclusive_edge == :right
-                rate_output[p,t] = sum((spike_times[t] .> time_windows[p,1]) .& (spike_times[t] .<= time_windows[p,2])) / durations[p]
+                rate_output[t,p] = sum((spike_times[t] .> time_windows[p,1]) .& (spike_times[t] .<= time_windows[p,2])) / durations[p]
             elseif inclusive_edge == :left
-                rate_output[p,t] = sum((spike_times[t] .>= time_windows[p,1]) .& (spike_times[t] .< time_windows[p,2])) / durations[p]
+                rate_output[t,p] = sum((spike_times[t] .>= time_windows[p,1]) .& (spike_times[t] .< time_windows[p,2])) / durations[p]
             end
         end
     end
