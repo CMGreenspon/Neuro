@@ -34,9 +34,10 @@ function JitterTrains(spike_times::Vector{Vector{Float64}},
 end
 
 function TimingClassification(spike_hist::Matrix{Vector{Float64}},
-                              smoothing_windows::Vector{Float64};
+                              smoothing_windows::AbstractVector;
                               num_folds::Int = 5,
                               max_lag_prop::Float64 = 0.05)
+    println("Starting timing classification...")
     # Workout fold indices
     (num_classes, num_trials) = size(spike_hist)
     fold_indices = Array{Vector{Int}}(undef, num_classes, num_folds)
@@ -56,10 +57,10 @@ function TimingClassification(spike_hist::Matrix{Vector{Float64}},
     for w = axes(smoothing_windows,1)
         println("Classifying with $(smoothing_windows[w]*1000) ms smoothing ($w of $(length(smoothing_windows)))")
         # First smooth histograms appropriately
-        smoothing_window_size = Int(round(smoothing_windows[w] / time_resolution))
+        smoothing_window_size = Int(round(smoothing_windows[w] / time_resolution)) * 5
         smoothed_spike_hist = Array{Vector{Float64}}(undef, num_classes, num_trials)
         for c = 1:num_classes, t = 1:num_trials
-            smoothed_spike_hist[c,t] = Neuro.SmoothRates(spike_hist[c,t], method = :gaussian, windowsize = smoothing_window_size, gauss_range = 1)
+            smoothed_spike_hist[c,t] = Neuro.SmoothRates(spike_hist[c,t], method = :gaussian, windowsize = smoothing_window_size, gauss_range = 5)
         end
 
         # For each fold: pairwise cross-covariance of all in-fold against out-fold textures
@@ -121,8 +122,9 @@ end
     match_ratio = 0.1 # Proportion of num_spikes to subsample
 
     jitter = 50 ./ 1e3 # Milliseconds
-    smoothing_windows = collect(Iterators.flatten(
-                        [.1:.1:1, 2:10, 20:10:100, 200:25:500])) ./ 1e3 # Milliseconds
+    # smoothing_windows = collect(Iterators.flatten(
+    #                     [.1:.1:1, 2:10, 20:10:100, 200:25:500])) ./ 1e3 # Milliseconds
+    smoothing_windows = collect(10:10:100)
 
 ## Trains
     # Create num_classes base trains
@@ -135,6 +137,5 @@ end
     jittered_times, jittered_hist = JitterTrains(base_times, num_trials, jitter, time_window = time_window, match_rates = true, match_ratio = match_ratio)
     
     # Perform timing classification
-    @btime covariance_matrices, classification_performance = TimingClassification(jittered_hist, smoothing_windows, num_folds = 5)
+    covariance_matrices, classification_performance = TimingClassification(jittered_hist, smoothing_windows, num_folds = 5)
 
-## plot the classification classification_performance

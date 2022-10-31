@@ -26,16 +26,16 @@ function ComputeSpikeRates(spike_times::Union{Vector{Float64}, Vector{Vector{Flo
     durations = mapslices(diff, time_windows, dims=2)
     
     # Iterate through each trial and compute rate in each period
-    rate_output = fill(0.0, num_trials, num_periods)
+    rate_output = fill(0.0, num_periods, num_trials)
     for t = 1:num_trials
         if all(isnan.(spike_times[t]))
             continue
         end
         for p = 1:num_periods
             if inclusive_edge == :right
-                rate_output[t,p] = sum((spike_times[t] .> time_windows[p,1]) .& (spike_times[t] .<= time_windows[p,2])) / durations[p]
+                rate_output[p,t] = sum((spike_times[t] .> time_windows[p,1]) .& (spike_times[t] .<= time_windows[p,2])) / durations[p]
             elseif inclusive_edge == :left
-                rate_output[t,p] = sum((spike_times[t] .>= time_windows[p,1]) .& (spike_times[t] .< time_windows[p,2])) / durations[p]
+                rate_output[p,t] = sum((spike_times[t] .>= time_windows[p,1]) .& (spike_times[t] .< time_windows[p,2])) / durations[p]
             end
         end
     end
@@ -57,6 +57,9 @@ function SmoothRates(spike_hist::Vector{<:Number};
         windowsize = windowsize + 1
     end
     half_win_idx = Int(floor(round(windowsize/2)))
+    if half_win_idx == 0
+        error("Window size $window_size is too small")
+    end
 
     # Use desired smoothing method
     # Though it's cleaner to allocate indices and then apply it's ~30% slower
@@ -84,11 +87,7 @@ function SmoothRates(spike_hist::Vector{<:Number};
 
     elseif method == :gaussian
         # Create the smoothing kernel
-        if (half_win_idx*2)+1 > 1 # LinRange errors when length of range == 1
-            hw_x = LinRange(-gauss_range,gauss_range,(half_win_idx*2)+1)
-        else
-            hw_x = 0
-        end
+        hw_x = LinRange(-gauss_range,gauss_range,(half_win_idx*2)+1)
         gauss_pdf = pdf.(Normal(0,1), hw_x)
         gauss_mult = gauss_pdf ./ sum(gauss_pdf) # Adjust for gauss_range parameter where values don't necessarily sum to 1
         # Convolve
@@ -97,7 +96,7 @@ function SmoothRates(spike_hist::Vector{<:Number};
                 smoothed_hist[i] = sum(spike_hist[1:i+half_win_idx] .* gauss_mult[end-(half_win_idx+i-1):end]) * 1/sum(gauss_mult[end-(half_win_idx+i-1):end])
             elseif i >= length(spike_hist) - half_win_idx # Partial right tail gauss - normalized by amount of gauss overlapping
                 smoothed_hist[i] = sum(spike_hist[i-half_win_idx:end] .* gauss_mult[1:length(i-half_win_idx:length(spike_hist))]) * 1/sum(gauss_mult[1:length(i-half_win_idx:length(spike_hist))])
-            else # Full gausee
+            else # Full gauss
                 smoothed_hist[i] = sum(spike_hist[i-half_win_idx:i+half_win_idx] .* gauss_mult)
             end
         end
