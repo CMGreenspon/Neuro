@@ -1,4 +1,4 @@
-function ComputeSpikeRates(spike_times::Union{Vector{Float64}, Vector{Vector{Float64}}},
+function ComputeSpikeRates(spike_times::Vector{Vector{Float64}},
                            time_windows::Union{AbstractMatrix, AbstractRange};
                            inclusive_edge::Symbol = :right)
     
@@ -44,64 +44,71 @@ function ComputeSpikeRates(spike_times::Union{Vector{Float64}, Vector{Vector{Flo
 end
 
 
-function SmoothRates(spike_hist::Vector{<:Number};
+function SmoothRates(spike_hist::Union{Matrix{<:Number}, Vector{<:Number}};
                      method::Symbol = :gaussian,
                      windowsize::Int = 5,
-                     gauss_range::Int = 3)
+                     gauss_lim::Int = 3)
+
+    # Parse spike_hist format
+    convert_output_to_vector = false
+    if spike_hist isa Vector # Convert to a matrix to simplify smoothing
+        spike_hist = reshape(spike_hist, length(spike_hist), 1)
+        convert_output_to_vector = true
+    end
+    (num_points, num_trials) = size(spike_hist)
 
     # Initalize output to be the same size as the input
-    smoothed_hist = zeros(length(spike_hist))
+    smoothed_hist = zeros(num_points, num_trials)
 
-    # Ensure window_size is odd-valued
-    if !iseven(windowsize)
-        windowsize = windowsize + 1
-    end
+    # Calculate size of kernel
     half_win_idx = Int(floor(round(windowsize/2)))
     if half_win_idx == 0
         error("Window size $window_size is too small")
     end
 
-    # Use desired smoothing method
-    # Though it's cleaner to allocate indices and then apply it's ~30% slower
-    if method == :mean
-        for i = 1:length(spike_hist)
-            if i <= half_win_idx
-                smoothed_hist[i] = mean(spike_hist[1:i+half_win_idx])
-            elseif i >= length(spike_hist) - half_win_idx
-                smoothed_hist[i] = mean(spike_hist[i-half_win_idx:end])
-            else
-                smoothed_hist[i] = mean(spike_hist[i-half_win_idx:i+half_win_idx])
+    for t = 1:num_trials
+        # Use desired smoothing method
+        # Though it's cleaner to allocate indices and then apply it's ~30% slower
+        if method == :mean
+            for i = 1:num_points
+                if i <= half_win_idx
+                    smoothed_hist[i,t] = mean(spike_hist[1:i+half_win_idx-1,t])
+                elseif i > num_points - half_win_idx
+                    smoothed_hist[i,t] = mean(spike_hist[i-half_win_idx:end,t])
+                else
+                    smoothed_hist[i,t] = mean(spike_hist[i-half_win_idx:i+half_win_idx,t])
+                end
             end
-        end
 
-    elseif method == :median
-        for i = 1:length(spike_hist)
-            if i <= half_win_idx
-                smoothed_hist[i] = median(spike_hist[1:i+half_win_idx])
-            elseif i >= length(spike_hist) - half_win_idx
-                smoothed_hist[i] = median(spike_hist[i-half_win_idx:end])
-            else
-                smoothed_hist[i] = median(spike_hist[i-half_win_idx:i+half_win_idx])
+        elseif method == :median
+            for i = 1:length(spike_hist)
+                if i <= half_win_idx
+                    smoothed_hist[i,t] = median(spike_hist[1:i+half_win_idx-1,t])
+                elseif i > num_points - half_win_idx
+                    smoothed_hist[i,t] = median(spike_hist[i-half_win_idx:end,t])
+                else
+                    smoothed_hist[i,t] = median(spike_hist[i-half_win_idx:i+half_win_idx,t])
+                end
             end
-        end
 
-    elseif method == :gaussian
-        # Create the smoothing kernel
-        hw_x = LinRange(-gauss_range,gauss_range,(half_win_idx*2)+1)
-        gauss_pdf = pdf.(Normal(0,1), hw_x)
-        gauss_mult = gauss_pdf ./ sum(gauss_pdf) # Adjust for gauss_range parameter where values don't necessarily sum to 1
-        # Convolve
-        for i = 1:length(spike_hist)
-            if i <= half_win_idx # Partial left tail gauss - normalized by amount of gauss overlapping
-                smoothed_hist[i] = sum(spike_hist[1:i+half_win_idx] .* gauss_mult[end-(half_win_idx+i-1):end]) * 1/sum(gauss_mult[end-(half_win_idx+i-1):end])
-            elseif i >= length(spike_hist) - half_win_idx # Partial right tail gauss - normalized by amount of gauss overlapping
-                smoothed_hist[i] = sum(spike_hist[i-half_win_idx:end] .* gauss_mult[1:length(i-half_win_idx:length(spike_hist))]) * 1/sum(gauss_mult[1:length(i-half_win_idx:length(spike_hist))])
-            else # Full gauss
-                smoothed_hist[i] = sum(spike_hist[i-half_win_idx:i+half_win_idx] .* gauss_mult)
+        elseif method == :gaussian
+            # Create the smoothing kernel
+            hw_x = LinRange(-gauss_lim,gauss_lim,(half_win_idx*2)+1)
+            gauss_pdf = pdf.(Normal(0,1), hw_x)
+            gauss_mult = gauss_pdf ./ sum(gauss_pdf) # Adjust for gauss_lim parameter where values don't necessarily sum to 1
+            # Convolve
+            for i = 1:length(spike_hist)
+                if i <= half_win_idx # Partial left tail gauss - normalized by amount of gauss overlapping
+                    smoothed_hist[i,t] = sum(spike_hist[1:i+half_win_idx] .* gauss_mult[end-(half_win_idx+i-1):end]) * 1/sum(gauss_mult[end-(half_win_idx+i-1):end])
+                elseif i >= length(spike_hist) - half_win_idx # Partial right tail gauss - normalized by amount of gauss overlapping
+                    smoothed_hist[i,t] = sum(spike_hist[i-half_win_idx:end] .* gauss_mult[1:length(i-half_win_idx:length(spike_hist))]) * 1/sum(gauss_mult[1:length(i-half_win_idx:length(spike_hist))])
+                else # Full gauss
+                    smoothed_hist[i,t] = sum(spike_hist[i-half_win_idx:i+half_win_idx] .* gauss_mult)
+                end
             end
+        else
+            error("Invalid method: must be :mean, :median, :gaussian")
         end
-    else
-        error("Invalid method: must be :mean, :median, :gaussian")
     end
 
     return smoothed_hist

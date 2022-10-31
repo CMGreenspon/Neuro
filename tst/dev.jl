@@ -1,4 +1,4 @@
-using Neuro, StatsBase, StatsPlots, BenchmarkTools, Distributions, Traceur
+using Neuro, StatsBase, StatsPlots, BenchmarkTools, Distributions
 gr(fmt = :png) # Fast / not interactive
 #plotlyjs() # Slow / interactive
 ## Spike Rates
