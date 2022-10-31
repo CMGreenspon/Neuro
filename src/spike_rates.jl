@@ -1,4 +1,11 @@
-function ComputeSpikeRates(spike_times::Vector{Vector{Float64}}, time_windows; inclusive_edge = :right)
+function ComputeSpikeRates(spike_times::Union{Vector{Float64}, Vector{Vector{Float64}}},
+                           time_windows::Union{AbstractMatrix, AbstractRange};
+                           inclusive_edge::Symbol = :right)
+    
+    # Convert single vector to vector{vector}
+    if spike_times isa Vector{Float64}
+        spike_times = [spike_times]
+    end 
     num_trials = length(spike_times)
 
     # Determine time windows/bin edges
@@ -37,7 +44,11 @@ function ComputeSpikeRates(spike_times::Vector{Vector{Float64}}, time_windows; i
 end
 
 
-function SmoothRates(spike_hist::Vector{<:Number}; method = :gaussian, windowsize=5)
+function SmoothRates(spike_hist::Vector{<:Number};
+                     method::Symbol = :gaussian,
+                     windowsize::Int = 5,
+                     gauss_range::Int = 3)
+
     # Initalize output to be the same size as the input
     smoothed_hist = zeros(length(spike_hist))
 
@@ -73,17 +84,20 @@ function SmoothRates(spike_hist::Vector{<:Number}; method = :gaussian, windowsiz
 
     elseif method == :gaussian
         # Create the smoothing kernel
-        hw_x = LinRange(-3,3,(half_win_idx*2)+1)
-        gauss_kernel = Normal(0,1)
-        gauss_pdf = pdf.(gauss_kernel, hw_x)
-        gauss_mult = gauss_pdf ./ sum(gauss_pdf)
+        if (half_win_idx*2)+1 > 1 # LinRange errors when length of range == 1
+            hw_x = LinRange(-gauss_range,gauss_range,(half_win_idx*2)+1)
+        else
+            hw_x = 0
+        end
+        gauss_pdf = pdf.(Normal(0,1), hw_x)
+        gauss_mult = gauss_pdf ./ sum(gauss_pdf) # Adjust for gauss_range parameter where values don't necessarily sum to 1
         # Convolve
         for i = 1:length(spike_hist)
-            if i <= half_win_idx
-                smoothed_hist[i] = sum(spike_hist[1:i+half_win_idx] .* gauss_mult[end-(half_win_idx+i-1):end])
-            elseif i >= length(spike_hist) - half_win_idx
-                smoothed_hist[i] = sum(spike_hist[i-half_win_idx:end] .* gauss_mult[1:length(i-half_win_idx:length(spike_hist))])
-            else
+            if i <= half_win_idx # Partial left tail gauss - normalized by amount of gauss overlapping
+                smoothed_hist[i] = sum(spike_hist[1:i+half_win_idx] .* gauss_mult[end-(half_win_idx+i-1):end]) * 1/sum(gauss_mult[end-(half_win_idx+i-1):end])
+            elseif i >= length(spike_hist) - half_win_idx # Partial right tail gauss - normalized by amount of gauss overlapping
+                smoothed_hist[i] = sum(spike_hist[i-half_win_idx:end] .* gauss_mult[1:length(i-half_win_idx:length(spike_hist))]) * 1/sum(gauss_mult[1:length(i-half_win_idx:length(spike_hist))])
+            else # Full gausee
                 smoothed_hist[i] = sum(spike_hist[i-half_win_idx:i+half_win_idx] .* gauss_mult)
             end
         end
