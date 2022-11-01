@@ -63,7 +63,7 @@ function SmoothRates(spike_hist::Union{Matrix{<:Number}, Vector{<:Number}};
 
     smoothed_hist = reduce(hcat, map(x -> SmoothRates_core(x, method, windowsize, gauss_lim), eachslice(spike_hist, dims=dims)))
 
-    if dims == 1
+    if dims == 1 # Rotate to maintain input shape
         smoothed_hist = rotl90(smoothed_hist)
     end
 
@@ -77,7 +77,6 @@ function SmoothRates_core(spike_hist,
                           method::Symbol = :gaussian,
                           windowsize::Int = 5,
                           gauss_lim::Int = 3)
-
 
     # Calculate size of kernel
     half_win_idx = Int(floor(round(windowsize/2)))
