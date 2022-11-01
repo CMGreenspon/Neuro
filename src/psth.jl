@@ -70,8 +70,9 @@ psth
 
     # Get range of spike times
     if windowedges === nothing
-        min_time = round(minimum(minimum.(spike_times; init=0))/binresolution) * binresolution
-        max_time = round(maximum(maximum.(spike_times; init=0))/binresolution) * binresolution
+        extrema = nanextrema(Iterators.flatten(spike_times))
+        min_time = round(extrema[1]/binresolution) * binresolution
+        max_time = round(extrema[2]/binresolution) * binresolution
         histedges = min_time:binresolution:max_time
     elseif windowedges isa Vector
         if eltype(windowedges) <: Number && length(windowedges) == 2 && windowedges[1] < windowedges[2]
