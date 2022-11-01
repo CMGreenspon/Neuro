@@ -7,6 +7,7 @@ module Neuro
     using Distributions
     using CSV
     using DataFrames
+    using NaNStatistics
 
     # Neuro.jl
     include("psth.jl")
