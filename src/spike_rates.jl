@@ -43,8 +43,12 @@ function ComputeSpikeRates(spike_times::Vector{Vector{Float64}},
     return rate_output
 end
 
-
-function SmoothRates(spike_hist::Union{Matrix{<:Number}, Vector{<:Number}};
+"""
+### SmoothRates(spike_hist::Union{Matrix{<:Number}, Vector{<:Number}}; args...)
+    
+Takes a vector or matrix of numbers and smooths along the desired dimension. 
+"""
+function SmoothRates(spike_hist::Matrix{<:Number}; # Matrix version
                      method::Symbol = :gaussian,
                      windowsize::Int = 5,
                      gauss_lim::Int = 3,
@@ -54,14 +58,7 @@ function SmoothRates(spike_hist::Union{Matrix{<:Number}, Vector{<:Number}};
         error("dims must be equal to 1 or 2")
     end
 
-    # Parse spike_hist format
-    convert_output_to_vector = false
-    if spike_hist isa Vector # Convert to a matrix to simplify smoothing
-        spike_hist = reshape(spike_hist, length(spike_hist), 1)
-        convert_output_to_vector = true
-    end
-
-    smoothed_hist = reduce(hcat, map(x -> SmoothRates_core(x, method, windowsize, gauss_lim), eachslice(spike_hist, dims=dims)))
+    smoothed_hist = reduce(hcat, map(x -> _SmoothRates(x, method, windowsize, gauss_lim), eachslice(spike_hist, dims=dims)))
 
     if dims == 1 # Rotate to maintain input shape
         smoothed_hist = rotl90(smoothed_hist)
@@ -70,13 +67,24 @@ function SmoothRates(spike_hist::Union{Matrix{<:Number}, Vector{<:Number}};
     return smoothed_hist
 end
 
+# Vector version
+function SmoothRates(spike_hist::Vector{<:Number};
+                     method::Symbol = :gaussian,
+                     windowsize::Int = 5,
+                     gauss_lim::Int = 3)
+
+    smoothed_hist = _SmoothRates(spike_hist, method, windowsize, gauss_lim)
+
+    return smoothed_hist
+end
+
 """
 Core function of above to allow map to be used with multiple dimensions
 """
-function SmoothRates_core(spike_hist,
-                          method::Symbol = :gaussian,
-                          windowsize::Int = 5,
-                          gauss_lim::Int = 3)
+function _SmoothRates(spike_hist,
+                      method::Symbol = :gaussian,
+                      windowsize::Int = 5,
+                      gauss_lim::Int = 3)
 
     # Calculate size of kernel
     half_win_idx = Int(floor(round(windowsize/2)))
