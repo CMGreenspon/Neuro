@@ -9,6 +9,7 @@ module Neuro
     using DataFrames
     using NaNStatistics
     using Distances
+    using Base.Threads
 
     export
         # Spike rates

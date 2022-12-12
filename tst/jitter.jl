@@ -52,6 +52,7 @@ function TimingClassification(spike_hist::Matrix{Vector{Float64}},
 
     # Smooth and classify
     max_lag = Int(round(length(spike_hist[1,1]) * max_lag_prop))
+    ml_idx = -max_lag:max_lag
     classification_performance = fill(NaN, length(smoothing_windows), num_folds)
     covariance_matrices = Vector{Array{Float64}}(undef, length(smoothing_windows))
     for w = axes(smoothing_windows,1)
@@ -59,7 +60,7 @@ function TimingClassification(spike_hist::Matrix{Vector{Float64}},
         # First smooth histograms appropriately
         smoothing_window_size = Int(round(smoothing_windows[w] / time_resolution)) * 5
         smoothed_spike_hist = Array{Vector{Float64}}(undef, num_classes, num_trials)
-        for c = 1:num_classes, t = 1:num_trials
+        Threads.@threads for c = 1:num_classes, t = 1:num_trials
             smoothed_spike_hist[c,t] = Neuro.SmoothRates(spike_hist[c,t], method = :gaussian, windowsize = smoothing_window_size, gauss_range = 5)
         end
 
@@ -81,7 +82,7 @@ function TimingClassification(spike_hist::Matrix{Vector{Float64}},
                     combs_max_cov = fill(NaN, size(combs,1))
                     Threads.@threads for cij = axes(combs,1)
                         combs_max_cov[cij] = maximum(crosscov(smoothed_spike_hist[ci, combs[cij][1]],
-                                                                smoothed_spike_hist[cj,combs[cij][2]], -max_lag:max_lag))
+                                                                smoothed_spike_hist[cj,combs[cij][2]], ml_idx))
                     end
                     pw_xcov_mat[ci,cj,f] = mean(combs_max_cov)
                 end
